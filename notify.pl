@@ -2,10 +2,8 @@
 #you might have been able to get this License if you got this Code
 
 use strict;
-use 5.01;
-use Desktop::Notify;
 
-my ($watch, $prefix, $notify_daemon) =
+my ($watch, $prefix) =
 ("", 'activityWatcher-');
 
 sub on_start
@@ -14,7 +12,6 @@ sub on_start
 
   $term->parse_keysym("M-C-a", "perl:$prefix"."activity");
   $term->parse_keysym("M-C-i", "perl:$prefix"."inactivity");
-  $notify_daemon = Desktop::Notify->new();
 
   ()
 }
@@ -43,7 +40,7 @@ sub on_user_command
         -> after(2)
         -> cb(sub
           {
-            my_notify('inactive');
+            $term->scr_bell;
             $watch = "";
             delete $term->{activity_ov};
             delete $term->{inactivity_timer};
@@ -57,9 +54,11 @@ sub on_user_command
 
 sub on_add_lines
 {
+  my ($term) = @_;
+
   if($watch eq 'activity')
   {
-    my_notify('active');
+    $term->scr_bell;
     $watch = "";
     delete $term->{activity_ov};
   }
@@ -69,16 +68,4 @@ sub on_add_lines
   }
 
   ()
-}
-
-sub my_notify
-{
-  my ($what) = @_;
-  warn "my notify called whith: @_)";
-  $notify_daemon->create(summary => "Shell was $what",
-			timeout => 5000,
-			body => <<BODY )
-You requested to be notified, when the shell goes $what.
-BODY
-  ->show();
 }
